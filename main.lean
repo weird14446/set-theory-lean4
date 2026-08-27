@@ -88,6 +88,62 @@ theorem prop_xor_iff_not_iff (p q : Prop) : (p ⊻ q) ↔ ¬(p ↔ q) := by
       · exact Or.inr ⟨hp, hq⟩
       · exact False.elim (h_not ⟨fun hp' => False.elim (hp hp'), fun hq' => False.elim (hq hq')⟩)
 
+-- 5. 배타적 논리합의 동치 표현: p ⊻ q ↔ (p ∨ q) ∧ ¬(p ∧ q)
+theorem prop_xor_iff_or_and_not_and (p q : Prop) : (p ⊻ q) ↔ (p ∨ q) ∧ ¬(p ∧ q) := by
+  constructor
+  · -- (→) p ⊻ q를 가정하자.
+    intro h_xor
+    -- 정의에 따라 이는 (p ∧ ¬q) ∨ (¬p ∧ q)와 동치이다.
+    have h_def : (p ∧ ¬q) ∨ (¬p ∧ q) := (prop_xor_def p q).mp h_xor
+    -- 이제 (p ∧ ¬q)와 (¬p ∧ q)를 나눠서 생각하자 (Or 소거 규칙).
+    cases h_def with
+    | inl h1 =>
+      -- 1) p ∧ ¬q 를 가정하자.
+      -- 가정과 And 소거 규칙을 통해 p를 추론해낼 수 있다.
+      have hp : p := h1.1
+      -- p와 Or 도입 규칙을 통해 p ∨ q를 추론해낼 수 있다.
+      have hp_or_q : p ∨ q := Or.inl hp
+      -- 가정과 And 소거 규칙을 통해 ¬q를 추론해낼 수 있다.
+      have hnq : ¬q := h1.2
+      -- ¬q와 Or 도입 규칙을 통해 ¬p ∨ ¬q를 추론할 수 있다.
+      have h_not_or : ¬p ∨ ¬q := Or.inr hnq
+      -- ¬p ∨ ¬q와 드 모르간 법칙을 통해 ¬(p ∧ q)를 추론할 수 있다.
+      have h_not_and : ¬(p ∧ q) := by
+        intro ⟨hp', hq'⟩
+        cases h_not_or with
+        | inl hnp => exact hnp hp'
+        | inr hnq' => exact hnq' hq'
+      -- p ∨ q와 ¬(p ∧ q), 그리고 And 도입 규칙을 통해 (p ∨ q) ∧ ¬(p ∧ q)를 추론할 수 있다.
+      exact ⟨hp_or_q, h_not_and⟩
+    | inr h2 =>
+      -- 2) ¬p ∧ q 를 가정하자. (p를 ¬p로, ¬q를 q로 바꿔도 성립하므로 일반성을 잃지 않음)
+      -- 가정과 And 소거 규칙을 통해 q를 추론해낼 수 있다.
+      have hq : q := h2.2
+      -- q와 Or 도입 규칙을 통해 p ∨ q를 추론해낼 수 있다.
+      have hp_or_q : p ∨ q := Or.inr hq
+      -- 가정과 And 소거 규칙을 통해 ¬p를 추론해낼 수 있다.
+      have hnp : ¬p := h2.1
+      -- ¬p와 Or 도입 규칙을 통해 ¬p ∨ ¬q를 추론할 수 있다.
+      have h_not_or : ¬p ∨ ¬q := Or.inl hnp
+      -- ¬p ∨ ¬q와 드 모르간 법칙을 통해 ¬(p ∧ q)를 추론할 수 있다.
+      have h_not_and : ¬(p ∧ q) := by
+        intro ⟨hp', hq'⟩
+        cases h_not_or with
+        | inl hnp' => exact hnp' hp'
+        | inr hnq => exact hnq hq'
+      -- p ∨ q와 ¬(p ∧ q), 그리고 And 도입 규칙을 통해 (p ∨ q) ∧ ¬(p ∧ q)를 추론할 수 있다.
+      exact ⟨hp_or_q, h_not_and⟩
+  · -- (←) (p ∨ q) ∧ ¬(p ∧ q) 가정
+    intro ⟨hpq, hnpq⟩
+    rw [prop_xor_def]
+    cases hpq with
+    | inl hp =>
+      have hnq : ¬q := fun hq => hnpq ⟨hp, hq⟩
+      exact Or.inl ⟨hp, hnq⟩
+    | inr hq =>
+      have hnp : ¬p := fun hp => hnpq ⟨hp, hq⟩
+      exact Or.inr ⟨hnp, hq⟩
+
 ------------------------------------------------------------------
 -- 공식 ZFC 공리계 (Official ZFC Axioms 1 ~ 9)
 ------------------------------------------------------------------
