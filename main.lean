@@ -404,6 +404,76 @@ noncomputable def opair (a b : Set) : Set :=
 
 notation "⟪" a ", " b "⟫" => opair a b
 
+theorem singleton_inj (a b : Set) (h : singleton a = singleton b) : a = b := by
+  have ha : a ∈ singleton a := (mem_singleton a a).mpr rfl
+  rw [h] at ha
+  exact (mem_singleton b a).mp ha
+
+theorem pair_eq_singleton (a b c : Set) (h : pair a b = singleton c) : a = c ∧ b = c := by
+  have ha : a ∈ pair a b := (mem_pair a b a).mpr (Or.inl rfl)
+  have hb : b ∈ pair a b := (mem_pair a b b).mpr (Or.inr rfl)
+  rw [h] at ha hb
+  exact ⟨(mem_singleton c a).mp ha, (mem_singleton c b).mp hb⟩
+
+-- 순서쌍의 상등 기본 정리: ⟨a, b⟩ = ⟨c, d⟩ ↔ a = c ∧ b = d
+theorem opair_inj (a b c d : Set) : ⟪a, b⟫ = ⟪c, d⟫ ↔ a = c ∧ b = d := by
+  constructor
+  · intro h
+    have h_sa : singleton a ∈ ⟪c, d⟫ := by
+      have : singleton a ∈ ⟪a, b⟫ := (mem_pair (singleton a) (pair a b) (singleton a)).mpr (Or.inl rfl)
+      rw [h] at this
+      exact this
+    have h_sa_cases := (mem_pair (singleton c) (pair c d) (singleton a)).mp h_sa
+    have ha_eq_c : a = c := by
+      cases h_sa_cases with
+      | inl h1 => exact singleton_inj a c h1
+      | inr h1 =>
+        have h_pcd : pair c d = singleton a := h1.symm
+        have ⟨hc, hd⟩ := pair_eq_singleton c d a h_pcd
+        have h_sc : singleton c ∈ ⟪a, b⟫ := by
+          have : singleton c ∈ ⟪c, d⟫ := (mem_pair (singleton c) (pair c d) (singleton c)).mpr (Or.inl rfl)
+          rw [← h] at this
+          exact this
+        cases (mem_pair (singleton a) (pair a b) (singleton c)).mp h_sc with
+        | inl h2 => exact (singleton_inj c a h2).symm
+        | inr h2 =>
+          have ⟨ha, _⟩ := pair_eq_singleton a b c h2.symm
+          rw [ha, hc]
+    constructor
+    · exact ha_eq_c
+    · subst ha_eq_c
+      by_cases hab : a = b
+      · subst hab
+        have h_pad_in : pair a d ∈ ⟪a, a⟫ := by
+          have : pair a d ∈ ⟪a, d⟫ := (mem_pair (singleton a) (pair a d) (pair a d)).mpr (Or.inr rfl)
+          rw [← h] at this
+          exact this
+        have h_pad_cases := (mem_pair (singleton a) (pair a a) (pair a d)).mp h_pad_in
+        have h_pad_eq : pair a d = singleton a := by
+          cases h_pad_cases with
+          | inl h1 => exact h1
+          | inr h2 => exact h2
+        have ⟨_, hda⟩ := pair_eq_singleton a d a h_pad_eq
+        exact hda.symm
+      · have h_pab_in : pair a b ∈ ⟪a, d⟫ := by
+          have : pair a b ∈ ⟪a, b⟫ := (mem_pair (singleton a) (pair a b) (pair a b)).mpr (Or.inr rfl)
+          rw [h] at this
+          exact this
+        cases (mem_pair (singleton a) (pair a d) (pair a b)).mp h_pab_in with
+        | inl h_eq1 =>
+          have ⟨_, hba⟩ := pair_eq_singleton a b a h_eq1
+          exact False.elim (hab hba.symm)
+        | inr h_eq2 =>
+          have hb_in : b ∈ pair a d := by
+            have : b ∈ pair a b := (mem_pair a b b).mpr (Or.inr rfl)
+            rw [h_eq2] at this
+            exact this
+          cases (mem_pair a d b).mp hb_in with
+          | inl hba => exact False.elim (hab hba.symm)
+          | inr hbd => exact hbd
+  · intro ⟨ha, hb⟩
+    rw [ha, hb]
+
 -- 보조정리: a ∈ A, b ∈ B 이면 ⟪a, b⟫ ∈ 𝒫(𝒫(A ∪ B))
 theorem opair_mem_powerset_powerset_union {A B a b : Set} (ha : a ∈ A) (hb : b ∈ B) :
     ⟪a, b⟫ ∈ 𝒫 (𝒫 (A ∪ B)) := by
@@ -456,6 +526,103 @@ theorem mem_prod (A B z : Set) : z ∈ (A ⨯ B) ↔ ∃ a b, a ∈ A ∧ b ∈ 
 theorem opair_mem_prod {A B a b : Set} (ha : a ∈ A) (hb : b ∈ B) : ⟪a, b⟫ ∈ (A ⨯ B) := by
   apply (mem_prod A B ⟪a, b⟫).mpr
   exact ⟨a, b, ha, hb, rfl⟩
+
+------------------------------------------------------------------
+-- 함수(Function), 전단사(Bijection) 및 데카르트 곱의 대칭성 (A ⨯ B ≅ B ⨯ A)
+------------------------------------------------------------------
+
+-- 관계 F가 X에서 Y로 가는 함수임: F ⊆ X ⨯ Y 이고 각 x ∈ X 마다 유일한 y ∈ Y가 존재하여 ⟪x, y⟫ ∈ F
+def is_function (F X Y : Set) : Prop :=
+  (F ⊆ (X ⨯ Y)) ∧ (∀ x, x ∈ X → ∃! y, y ∈ Y ∧ ⟪x, y⟫ ∈ F)
+
+-- 단사 함수 (Injective)
+def is_injective (F X Y : Set) : Prop :=
+  is_function F X Y ∧
+  ∀ x1 x2 y, x1 ∈ X → x2 ∈ X → y ∈ Y → ⟪x1, y⟫ ∈ F → ⟪x2, y⟫ ∈ F → x1 = x2
+
+-- 전사 함수 (Surjective)
+def is_surjective (F X Y : Set) : Prop :=
+  is_function F X Y ∧
+  ∀ y, y ∈ Y → ∃ x, x ∈ X ∧ ⟪x, y⟫ ∈ F
+
+-- 전단사 함수 (Bijective)
+def is_bijective (F X Y : Set) : Prop :=
+  is_injective F X Y ∧ is_surjective F X Y
+
+-- 두 집합 사이에 전단사 함수가 존재함 (대등 / 동형, Equipotent / Isomorphic)
+def equipotent (X Y : Set) : Prop :=
+  ∃ F, is_bijective F X Y
+
+infix:50 " ≅ " => equipotent
+
+-- 데카르트 곱의 대칭 사상 (Swap Function): f(a, b) = (b, a)
+-- f = { ⟪⟪a, b⟫, ⟪b, a⟫⟫ | a ∈ A ∧ b ∈ B }
+noncomputable def swap_func (A B : Set) : Set :=
+  sep (fun w => ∃ a b, a ∈ A ∧ b ∈ B ∧ w = ⟪⟪a, b⟫, ⟪b, a⟫⟫) ((A ⨯ B) ⨯ (B ⨯ A))
+
+theorem mem_swap_func (A B w : Set) :
+    w ∈ swap_func A B ↔ ∃ a b, a ∈ A ∧ b ∈ B ∧ w = ⟪⟪a, b⟫, ⟪b, a⟫⟫ := by
+  rw [swap_func, mem_sep]
+  constructor
+  · intro ⟨_, h_ex⟩
+    exact h_ex
+  · intro ⟨a, b, ha, hb, hw⟩
+    rw [hw]
+    constructor
+    · apply opair_mem_prod
+      · exact opair_mem_prod ha hb
+      · exact opair_mem_prod hb ha
+    · exact ⟨a, b, ha, hb, rfl⟩
+
+-- 1. swap_func A B는 A ⨯ B 에서 B ⨯ A 로 가는 함수이다.
+theorem swap_func_is_function (A B : Set) : is_function (swap_func A B) (A ⨯ B) (B ⨯ A) := by
+  constructor
+  · intro w hw
+    exact ((mem_sep (fun w => ∃ a b, a ∈ A ∧ b ∈ B ∧ w = ⟪⟪a, b⟫, ⟪b, a⟫⟫) ((A ⨯ B) ⨯ (B ⨯ A)) w).mp hw).1
+  · intro x hx
+    rcases (mem_prod A B x).mp hx with ⟨a, b, ha, hb, hx_eq⟩
+    subst hx_eq
+    refine ⟨⟪b, a⟫, ⟨?_, ?_⟩, ?_⟩
+    · exact opair_mem_prod hb ha
+    · apply (mem_swap_func A B ⟪⟪a, b⟫, ⟪b, a⟫⟫).mpr
+      exact ⟨a, b, ha, hb, rfl⟩
+    · intro y ⟨hy_in, hy_pair⟩
+      rcases (mem_swap_func A B ⟪⟪a, b⟫, y⟫).mp hy_pair with ⟨a', b', ha', hb', h_eq⟩
+      have h_pair := (opair_inj ⟪a, b⟫ y ⟪a', b'⟫ ⟪b', a'⟫).mp h_eq
+      have h_ab := (opair_inj a b a' b').mp h_pair.1
+      rw [h_pair.2, h_ab.1, h_ab.2]
+
+-- 2. swap_func A B는 단사적이다. (theorems.md 1번 증명)
+theorem swap_func_is_injective (A B : Set) : is_injective (swap_func A B) (A ⨯ B) (B ⨯ A) := by
+  constructor
+  · exact swap_func_is_function A B
+  · intro x1 x2 y hx1 hx2 hy h1 h2
+    rcases (mem_swap_func A B ⟪x1, y⟫).mp h1 with ⟨a1, b1, ha1, hb1, h_eq1⟩
+    rcases (mem_swap_func A B ⟪x2, y⟫).mp h2 with ⟨a2, b2, ha2, hb2, h_eq2⟩
+    have h1_inj := (opair_inj x1 y ⟪a1, b1⟫ ⟪b1, a1⟫).mp h_eq1
+    have h2_inj := (opair_inj x2 y ⟪a2, b2⟫ ⟪b2, a2⟫).mp h_eq2
+    have hy_eq : ⟪b1, a1⟫ = ⟪b2, a2⟫ := by rw [← h1_inj.2, ← h2_inj.2]
+    have ⟨hb_eq, ha_eq⟩ := (opair_inj b1 a1 b2 a2).mp hy_eq
+    rw [h1_inj.1, h2_inj.1, ha_eq, hb_eq]
+
+-- 3. swap_func A B는 전사적이다. (theorems.md 2번 증명)
+theorem swap_func_is_surjective (A B : Set) : is_surjective (swap_func A B) (A ⨯ B) (B ⨯ A) := by
+  constructor
+  · exact swap_func_is_function A B
+  · intro y hy
+    rcases (mem_prod B A y).mp hy with ⟨b, a, hb, ha, hy_eq⟩
+    subst hy_eq
+    refine ⟨⟪a, b⟫, opair_mem_prod ha hb, ?_⟩
+    apply (mem_swap_func A B ⟪⟪a, b⟫, ⟪b, a⟫⟫).mpr
+    exact ⟨a, b, ha, hb, rfl⟩
+
+-- 4. swap_func A B는 전단사 함수이다.
+theorem swap_func_is_bijective (A B : Set) : is_bijective (swap_func A B) (A ⨯ B) (B ⨯ A) :=
+  ⟨swap_func_is_injective A B, swap_func_is_surjective A B⟩
+
+-- 5. 결론 정리: 데카르트 곱의 대칭성 (동형적 교환법칙: A ⨯ B ≅ B ⨯ A)
+theorem prod_comm_iso (A B : Set) : (A ⨯ B) ≅ (B ⨯ A) :=
+  ⟨swap_func A B, swap_func_is_bijective A B⟩
 
 ------------------------------------------------------------------
 -- 정리: 전체집합(Universal Set)은 존재하지 않는다 (러셀의 역설).

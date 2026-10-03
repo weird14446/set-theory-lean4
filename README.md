@@ -46,9 +46,14 @@ Lean 4로 형식화한 **체르멜로-프렝켈 집합론 및 선택 공리(ZFC,
   - 명제 논리 XOR과의 대응: `x ∈ A ⊕ B ↔ (x ∈ A) ⊻ (x ∈ B)`
 - **쿠라토프스키 순서쌍 및 데카르트 곱 (Cartesian Product)**:
   - 쿠라토프스키 순서쌍: `opair a b` (`⟪a, b⟫ = {{a}, {a, b}}`)
+  - 순서쌍 상등 기본 정리: `opair_inj` (`⟪a, b⟫ = ⟪c, d⟫ ↔ a = c ∧ b = d`)
   - 데카르트 곱: `A ⨯ B` (`{ ⟪a, b⟫ | a ∈ A ∧ b ∈ B } ⊆ 𝒫(𝒫(A ∪ B))`)
   - 멱집합 상위 포함 관계: `(A ⨯ B) ⊆ 𝒫(𝒫(A ∪ B))`
   - 원소 판정 동치 정리: `z ∈ A ⨯ B ↔ ∃ a ∈ A, b ∈ B, z = ⟪a, b⟫`
+- **함수와 전단사(Bijection) 및 데카르트 곱의 대칭성**:
+  - 함수, 단사, 전사, 전단사 및 동형(대등) 관계 정의: `is_function`, `is_injective`, `is_surjective`, `is_bijective`, `X ≅ Y` (`equipotent`)
+  - 대칭 사상 (Swap Function): `swap_func A B` ($f(a, b) = (b, a)$)
+  - 데카르트 곱의 대칭성 (동형적 교환법칙): `(A ⨯ B) ≅ (B ⨯ A)` (`prod_comm_iso`)
 - **불가능성 정리 (러셀의 역설)**:
   - **전체집합(Universal Set)의 부존재 정리**: `¬ ∃ V, ∀ x, x ∈ V`
   - **절대적 여집합의 부존재 정리**: `¬ ∃ C, ∀ x, x ∈ C ↔ x ∉ A` (정칙성 공리 및 러셀의 역설 2가지 방식으로 증명)
