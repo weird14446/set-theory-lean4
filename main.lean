@@ -395,6 +395,69 @@ theorem mem_symm_diff_iff_xor (A B x : Set) : x ∈ (A ⊕ B) ↔ (x ∈ A) ⊻ 
     | inr h2 => exact Or.inr ⟨h2.2, h2.1⟩
 
 ------------------------------------------------------------------
+-- 쿠라토프스키 순서쌍 (Kuratowski Ordered Pair) 및 데카르트 곱 (Cartesian Product)
+------------------------------------------------------------------
+
+-- 쿠라토프스키 순서쌍: ⟨a, b⟩ = {{a}, {a, b}}
+noncomputable def opair (a b : Set) : Set :=
+  pair (singleton a) (pair a b)
+
+notation "⟪" a ", " b "⟫" => opair a b
+
+-- 보조정리: a ∈ A, b ∈ B 이면 ⟪a, b⟫ ∈ 𝒫(𝒫(A ∪ B))
+theorem opair_mem_powerset_powerset_union {A B a b : Set} (ha : a ∈ A) (hb : b ∈ B) :
+    ⟪a, b⟫ ∈ 𝒫 (𝒫 (A ∪ B)) := by
+  have ha_un : a ∈ A ∪ B := (mem_union A B a).mpr (Or.inl ha)
+  have hb_un : b ∈ A ∪ B := (mem_union A B b).mpr (Or.inr hb)
+  have h_sa : singleton a ∈ 𝒫 (A ∪ B) := by
+    rw [mem_powerset]
+    intro z hz
+    rw [mem_singleton] at hz
+    rw [hz]
+    exact ha_un
+  have h_pab : pair a b ∈ 𝒫 (A ∪ B) := by
+    rw [mem_powerset]
+    intro z hz
+    rw [mem_pair] at hz
+    cases hz with
+    | inl hza => rw [hza]; exact ha_un
+    | inr hzb => rw [hzb]; exact hb_un
+  rw [mem_powerset]
+  intro z hz
+  rw [opair, mem_pair] at hz
+  cases hz with
+  | inl h_eq1 => rw [h_eq1]; exact h_sa
+  | inr h_eq2 => rw [h_eq2]; exact h_pab
+
+-- 데카르트 곱: A ⨯ B = { ⟪a, b⟫ | a ∈ A ∧ b ∈ B } ⊆ 𝒫(𝒫(A ∪ B))
+noncomputable def prod (A B : Set) : Set :=
+  sep (fun z => ∃ a b, a ∈ A ∧ b ∈ B ∧ z = ⟪a, b⟫) (𝒫 (𝒫 (A ∪ B)))
+
+infixl:70 " ⨯ " => prod
+
+-- 데카르트 곱은 𝒫(𝒫(A ∪ B))의 부분집합이다.
+theorem prod_subset_powerset_powerset (A B : Set) : (A ⨯ B) ⊆ 𝒫 (𝒫 (A ∪ B)) := by
+  intro z hz
+  exact ((mem_sep (fun z => ∃ a b, a ∈ A ∧ b ∈ B ∧ z = ⟪a, b⟫) (𝒫 (𝒫 (A ∪ B))) z).mp hz).1
+
+-- 데카르트 곱의 원소 조건
+theorem mem_prod (A B z : Set) : z ∈ (A ⨯ B) ↔ ∃ a b, a ∈ A ∧ b ∈ B ∧ z = ⟪a, b⟫ := by
+  rw [prod, mem_sep]
+  constructor
+  · intro ⟨_, h_ex⟩
+    exact h_ex
+  · intro ⟨a, b, ha, hb, hz⟩
+    rw [hz]
+    constructor
+    · exact opair_mem_powerset_powerset_union ha hb
+    · exact ⟨a, b, ha, hb, rfl⟩
+
+-- a ∈ A, b ∈ B 이면 ⟪a, b⟫ ∈ A ⨯ B
+theorem opair_mem_prod {A B a b : Set} (ha : a ∈ A) (hb : b ∈ B) : ⟪a, b⟫ ∈ (A ⨯ B) := by
+  apply (mem_prod A B ⟪a, b⟫).mpr
+  exact ⟨a, b, ha, hb, rfl⟩
+
+------------------------------------------------------------------
 -- 정리: 전체집합(Universal Set)은 존재하지 않는다 (러셀의 역설).
 ------------------------------------------------------------------
 theorem no_universal_set : ¬ ∃ V : Set, ∀ x : Set, x ∈ V := by
