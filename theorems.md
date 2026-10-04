@@ -25,3 +25,13 @@ $f(a,b)=f(x,y)$를 가정하자. 그렇다면 $(b,a)=(y,x)$이다. 자명하게 
 2. $f$는 전사적이다.
 
 자명하다.
+
+## 동형(대등) 관계의 동치 관계 (Equivalence Relation)
+두 집합 $X, Y$ 사이에 전단사 함수가 존재할 때 두 집합이 동형(대등)하다고 하며, 이를 $X \cong Y$로 표기한다. 동형 관계 $\cong$는 다음 3가지 조건을 만족하므로 동치 관계(Equivalence Relation)이다.
+
+1. **반사율 (Reflexivity)**: 임의의 집합 $X$에 대하여 $X \cong X$이다.
+   - 항등 함수 $\operatorname{id}_X(x) = x$는 $X$에서 $X$로의 전단사 함수이다.
+2. **대칭율 (Symmetry)**: $X \cong Y$이면 $Y \cong X$이다.
+   - $f : X \to Y$가 전단사 함수이면, 그 역함수 $f^{-1} : Y \to X$ 또한 전단사 함수이다.
+3. **추이율 (Transitivity)**: $X \cong Y$이고 $Y \cong Z$이면 $X \cong Z$이다.
+   - $f : X \to Y$와 $g : Y \to Z$가 전단사 함수이면, 두 함수의 합성 $g \circ f : X \to Z$ 또한 전단사 함수이다.

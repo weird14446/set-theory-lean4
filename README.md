@@ -54,6 +54,11 @@ Lean 4로 형식화한 **체르멜로-프렝켈 집합론 및 선택 공리(ZFC,
   - 함수, 단사, 전사, 전단사 및 동형(대등) 관계 정의: `is_function`, `is_injective`, `is_surjective`, `is_bijective`, `X ≅ Y` (`equipotent`)
   - 대칭 사상 (Swap Function): `swap_func A B` ($f(a, b) = (b, a)$)
   - 데카르트 곱의 대칭성 (동형적 교환법칙): `(A ⨯ B) ≅ (B ⨯ A)` (`prod_comm_iso`)
+  - **동형(대등) 관계의 동치 관계 정리**:
+    - 반사율: `X ≅ X` (`equipotent_refl`, 항등 함수 `id_func`)
+    - 대칭율: `X ≅ Y → Y ≅ X` (`equipotent_symm`, 역함수 `inv_func`)
+    - 추이율: `X ≅ Y → Y ≅ Z → X ≅ Z` (`equipotent_trans`, 합성 함수 `comp_func`)
+    - 동치 관계 종합: `equipotent_is_equivalence`
 - **불가능성 정리 (러셀의 역설)**:
   - **전체집합(Universal Set)의 부존재 정리**: `¬ ∃ V, ∀ x, x ∈ V`
   - **절대적 여집합의 부존재 정리**: `¬ ∃ C, ∀ x, x ∈ C ↔ x ∉ A` (정칙성 공리 및 러셀의 역설 2가지 방식으로 증명)

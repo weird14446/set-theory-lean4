@@ -625,6 +625,220 @@ theorem prod_comm_iso (A B : Set) : (A ⨯ B) ≅ (B ⨯ A) :=
   ⟨swap_func A B, swap_func_is_bijective A B⟩
 
 ------------------------------------------------------------------
+-- 동형 / 대등 관계(Equipotence, ≅)의 동치 관계 (Equivalence Relation) 증명
+------------------------------------------------------------------
+
+-- 1. 항등 함수 (Identity Function) 및 반사율 (Reflexivity: X ≅ X)
+noncomputable def id_func (X : Set) : Set :=
+  sep (fun w => ∃ x, x ∈ X ∧ w = ⟪x, x⟫) (X ⨯ X)
+
+theorem mem_id_func (X w : Set) :
+    w ∈ id_func X ↔ ∃ x, x ∈ X ∧ w = ⟪x, x⟫ := by
+  rw [id_func, mem_sep]
+  constructor
+  · intro ⟨_, h_ex⟩; exact h_ex
+  · intro ⟨x, hx, hw⟩
+    rw [hw]
+    constructor
+    · exact opair_mem_prod hx hx
+    · exact ⟨x, hx, rfl⟩
+
+theorem id_func_is_function (X : Set) : is_function (id_func X) X X := by
+  constructor
+  · intro w hw
+    exact ((mem_sep (fun w => ∃ x, x ∈ X ∧ w = ⟪x, x⟫) (X ⨯ X) w).mp hw).1
+  · intro x hx
+    refine ⟨x, ⟨hx, ?_⟩, ?_⟩
+    · apply (mem_id_func X ⟪x, x⟫).mpr
+      exact ⟨x, hx, rfl⟩
+    · intro y ⟨hy_in, hy_pair⟩
+      rcases (mem_id_func X ⟪x, y⟫).mp hy_pair with ⟨x', hx', h_eq⟩
+      have ⟨hx_eq, hy_eq⟩ := (opair_inj x y x' x').mp h_eq
+      rw [hy_eq, ← hx_eq]
+
+theorem id_func_is_injective (X : Set) : is_injective (id_func X) X X := by
+  constructor
+  · exact id_func_is_function X
+  · intro x1 x2 y hx1 hx2 hy h1 h2
+    rcases (mem_id_func X ⟪x1, y⟫).mp h1 with ⟨x1', hx1', h_eq1⟩
+    rcases (mem_id_func X ⟪x2, y⟫).mp h2 with ⟨x2', hx2', h_eq2⟩
+    have ⟨hx1_eq, hy1_eq⟩ := (opair_inj x1 y x1' x1').mp h_eq1
+    have ⟨hx2_eq, hy2_eq⟩ := (opair_inj x2 y x2' x2').mp h_eq2
+    rw [hx1_eq, ← hy1_eq, hy2_eq, ← hx2_eq]
+
+theorem id_func_is_surjective (X : Set) : is_surjective (id_func X) X X := by
+  constructor
+  · exact id_func_is_function X
+  · intro y hy
+    refine ⟨y, hy, ?_⟩
+    apply (mem_id_func X ⟪y, y⟫).mpr
+    exact ⟨y, hy, rfl⟩
+
+theorem id_func_is_bijective (X : Set) : is_bijective (id_func X) X X :=
+  ⟨id_func_is_injective X, id_func_is_surjective X⟩
+
+-- [성질 1] 반사율 (Reflexivity): 임의의 집합 X에 대하여 X ≅ X 이다.
+theorem equipotent_refl (X : Set) : X ≅ X :=
+  ⟨id_func X, id_func_is_bijective X⟩
+
+-- 2. 역함수 (Inverse Function) 및 대칭율 (Symmetry: X ≅ Y → Y ≅ X)
+noncomputable def inv_func (F X Y : Set) : Set :=
+  sep (fun w => ∃ x y, x ∈ X ∧ y ∈ Y ∧ ⟪x, y⟫ ∈ F ∧ w = ⟪y, x⟫) (Y ⨯ X)
+
+theorem mem_inv_func (F X Y w : Set) :
+    w ∈ inv_func F X Y ↔ ∃ x y, x ∈ X ∧ y ∈ Y ∧ ⟪x, y⟫ ∈ F ∧ w = ⟪y, x⟫ := by
+  rw [inv_func, mem_sep]
+  constructor
+  · intro ⟨_, h_ex⟩; exact h_ex
+  · intro ⟨x, y, hx, hy, hF, hw⟩
+    rw [hw]
+    constructor
+    · exact opair_mem_prod hy hx
+    · exact ⟨x, y, hx, hy, hF, rfl⟩
+
+theorem inv_func_is_function {F X Y : Set} (h_bij : is_bijective F X Y) :
+    is_function (inv_func F X Y) Y X := by
+  have h_func := h_bij.1.1
+  have h_inj := h_bij.1.2
+  have h_surj := h_bij.2.2
+  constructor
+  · intro w hw
+    exact ((mem_sep (fun w => ∃ x y, x ∈ X ∧ y ∈ Y ∧ ⟪x, y⟫ ∈ F ∧ w = ⟪y, x⟫) (Y ⨯ X) w).mp hw).1
+  · intro y hy
+    rcases h_surj y hy with ⟨x, hx, h_xy⟩
+    refine ⟨x, ⟨hx, ?_⟩, ?_⟩
+    · apply (mem_inv_func F X Y ⟪y, x⟫).mpr
+      exact ⟨x, y, hx, hy, h_xy, rfl⟩
+    · intro x' ⟨hx'_in, hx'_pair⟩
+      rcases (mem_inv_func F X Y ⟪y, x'⟫).mp hx'_pair with ⟨x'', y', hx'', hy', h_x''y', h_eq⟩
+      have ⟨hy_eq, hx'_eq⟩ := (opair_inj y x' y' x'').mp h_eq
+      have hx'_eq_symm : x'' = x' := hx'_eq.symm
+      have hy_eq_symm : y' = y := hy_eq.symm
+      rw [hx'_eq_symm, hy_eq_symm] at h_x''y'
+      rw [hx'_eq_symm] at hx''
+      exact h_inj x' x y hx'' hx hy h_x''y' h_xy
+
+theorem inv_func_is_injective {F X Y : Set} (h_bij : is_bijective F X Y) :
+    is_injective (inv_func F X Y) Y X := by
+  have h_func := h_bij.1.1
+  constructor
+  · exact inv_func_is_function h_bij
+  · intro y1 y2 x hy1 hy2 hx h1 h2
+    rcases (mem_inv_func F X Y ⟪y1, x⟫).mp h1 with ⟨x1, y1', hx1, hy1', h_x1y1', h_eq1⟩
+    rcases (mem_inv_func F X Y ⟪y2, x⟫).mp h2 with ⟨x2, y2', hx2, hy2', h_x2y2', h_eq2⟩
+    have ⟨hy1_eq, hx1_eq⟩ := (opair_inj y1 x y1' x1).mp h_eq1
+    have ⟨hy2_eq, hx2_eq⟩ := (opair_inj y2 x y2' x2).mp h_eq2
+    subst hy1_eq hy2_eq hx1_eq hx2_eq
+    rcases h_func.2 x hx1 with ⟨y_ex, ⟨hy_ex, hF_ex⟩, hy_uniq⟩
+    have hy1_uniq := hy_uniq y1 ⟨hy1, h_x1y1'⟩
+    have hy2_uniq := hy_uniq y2 ⟨hy2, h_x2y2'⟩
+    rw [hy1_uniq, hy2_uniq]
+
+theorem inv_func_is_surjective {F X Y : Set} (h_bij : is_bijective F X Y) :
+    is_surjective (inv_func F X Y) Y X := by
+  have h_func := h_bij.1.1
+  constructor
+  · exact inv_func_is_function h_bij
+  · intro x hx
+    rcases h_func.2 x hx with ⟨y, ⟨hy, h_xy⟩, _⟩
+    refine ⟨y, hy, ?_⟩
+    apply (mem_inv_func F X Y ⟪y, x⟫).mpr
+    exact ⟨x, y, hx, hy, h_xy, rfl⟩
+
+theorem inv_func_is_bijective {F X Y : Set} (h_bij : is_bijective F X Y) :
+    is_bijective (inv_func F X Y) Y X :=
+  ⟨inv_func_is_injective h_bij, inv_func_is_surjective h_bij⟩
+
+-- [성질 2] 대칭율 (Symmetry): X ≅ Y 이면 Y ≅ X 이다.
+theorem equipotent_symm (X Y : Set) : X ≅ Y → Y ≅ X := by
+  intro ⟨F, hF⟩
+  exact ⟨inv_func F X Y, inv_func_is_bijective hF⟩
+
+-- 3. 합성 함수 (Composition) 및 추이율 (Transitivity: X ≅ Y → Y ≅ Z → X ≅ Z)
+noncomputable def comp_func (G F X Y Z : Set) : Set :=
+  sep (fun w => ∃ x z, x ∈ X ∧ z ∈ Z ∧ (∃ y, y ∈ Y ∧ ⟪x, y⟫ ∈ F ∧ ⟪y, z⟫ ∈ G) ∧ w = ⟪x, z⟫) (X ⨯ Z)
+
+theorem mem_comp_func (G F X Y Z w : Set) :
+    w ∈ comp_func G F X Y Z ↔
+      ∃ x z, x ∈ X ∧ z ∈ Z ∧ (∃ y, y ∈ Y ∧ ⟪x, y⟫ ∈ F ∧ ⟪y, z⟫ ∈ G) ∧ w = ⟪x, z⟫ := by
+  rw [comp_func, mem_sep]
+  constructor
+  · intro ⟨_, h_ex⟩; exact h_ex
+  · intro ⟨x, z, hx, hz, h_mid, hw⟩
+    rw [hw]
+    constructor
+    · exact opair_mem_prod hx hz
+    · exact ⟨x, z, hx, hz, h_mid, rfl⟩
+
+theorem comp_func_is_function {F G X Y Z : Set}
+    (hF : is_function F X Y) (hG : is_function G Y Z) :
+    is_function (comp_func G F X Y Z) X Z := by
+  constructor
+  · intro w hw
+    exact ((mem_sep (fun w => ∃ x z, x ∈ X ∧ z ∈ Z ∧ (∃ y, y ∈ Y ∧ ⟪x, y⟫ ∈ F ∧ ⟪y, z⟫ ∈ G) ∧ w = ⟪x, z⟫) (X ⨯ Z) w).mp hw).1
+  · intro x hx
+    rcases hF.2 x hx with ⟨y, ⟨hy, hF_xy⟩, hy_uniq0⟩
+    rcases hG.2 y hy with ⟨z, ⟨hz, hG_yz⟩, hz_uniq0⟩
+    refine ⟨z, ⟨hz, ?_⟩, ?_⟩
+    · apply (mem_comp_func G F X Y Z ⟪x, z⟫).mpr
+      exact ⟨x, z, hx, hz, ⟨y, hy, hF_xy, hG_yz⟩, rfl⟩
+    · intro z' ⟨hz', hz'_pair⟩
+      rcases (mem_comp_func G F X Y Z ⟪x, z'⟫).mp hz'_pair with ⟨x', z'', hx', hz'', ⟨y', hy', hF_x'y', hG_y'z''⟩, h_eq⟩
+      have ⟨hx_eq, hz'_eq⟩ := (opair_inj x z' x' z'').mp h_eq
+      have hx'_eq_symm : x' = x := hx_eq.symm
+      have hz''_eq_symm : z'' = z' := hz'_eq.symm
+      rw [hx'_eq_symm] at hF_x'y'
+      have hy_eq := hy_uniq0 y' ⟨hy', hF_x'y'⟩
+      rw [hy_eq, hz''_eq_symm] at hG_y'z''
+      rw [hz''_eq_symm] at hz''
+      have hz_eq := hz_uniq0 z' ⟨hz'', hG_y'z''⟩
+      exact hz_eq
+
+theorem comp_func_is_injective {F G X Y Z : Set}
+    (hF : is_injective F X Y) (hG : is_injective G Y Z) :
+    is_injective (comp_func G F X Y Z) X Z := by
+  constructor
+  · exact comp_func_is_function hF.1 hG.1
+  · intro x1 x2 z hx1 hx2 hz h1 h2
+    rcases (mem_comp_func G F X Y Z ⟪x1, z⟫).mp h1 with ⟨x1', z1, hx1', hz1, ⟨y1, hy1, hF1, hG1⟩, h_eq1⟩
+    rcases (mem_comp_func G F X Y Z ⟪x2, z⟫).mp h2 with ⟨x2', z2, hx2', hz2, ⟨y2, hy2, hF2, hG2⟩, h_eq2⟩
+    have ⟨hx1_eq, hz1_eq⟩ := (opair_inj x1 z x1' z1).mp h_eq1
+    have ⟨hx2_eq, hz2_eq⟩ := (opair_inj x2 z x2' z2).mp h_eq2
+    subst hx1_eq hz1_eq hx2_eq hz2_eq
+    have hy_eq : y1 = y2 := hG.2 y1 y2 z hy1 hy2 hz hG1 hG2
+    subst hy_eq
+    exact hF.2 x1 x2 y1 hx1 hx2 hy1 hF1 hF2
+
+theorem comp_func_is_surjective {F G X Y Z : Set}
+    (hF : is_surjective F X Y) (hG : is_surjective G Y Z) :
+    is_surjective (comp_func G F X Y Z) X Z := by
+  constructor
+  · exact comp_func_is_function hF.1 hG.1
+  · intro z hz
+    rcases hG.2 z hz with ⟨y, hy, hG_yz⟩
+    rcases hF.2 y hy with ⟨x, hx, hF_xy⟩
+    refine ⟨x, hx, ?_⟩
+    apply (mem_comp_func G F X Y Z ⟪x, z⟫).mpr
+    exact ⟨x, z, hx, hz, ⟨y, hy, hF_xy, hG_yz⟩, rfl⟩
+
+theorem comp_func_is_bijective {F G X Y Z : Set}
+    (hF : is_bijective F X Y) (hG : is_bijective G Y Z) :
+    is_bijective (comp_func G F X Y Z) X Z :=
+  ⟨comp_func_is_injective hF.1 hG.1, comp_func_is_surjective hF.2 hG.2⟩
+
+-- [성질 3] 추이율 (Transitivity): X ≅ Y 이고 Y ≅ Z 이면 X ≅ Z 이다.
+theorem equipotent_trans (X Y Z : Set) : X ≅ Y → Y ≅ Z → X ≅ Z := by
+  intro ⟨F, hF⟩ ⟨G, hG⟩
+  exact ⟨comp_func G F X Y Z, comp_func_is_bijective hF hG⟩
+
+-- [종합 정리] 동형(대등) 관계는 동치 관계이다 (반사율, 대칭율, 추이율 만족).
+theorem equipotent_is_equivalence :
+    (∀ X, X ≅ X) ∧
+    (∀ X Y, X ≅ Y → Y ≅ X) ∧
+    (∀ X Y Z, X ≅ Y → Y ≅ Z → X ≅ Z) :=
+  ⟨equipotent_refl, equipotent_symm, equipotent_trans⟩
+
+------------------------------------------------------------------
 -- 정리: 전체집합(Universal Set)은 존재하지 않는다 (러셀의 역설).
 ------------------------------------------------------------------
 theorem no_universal_set : ¬ ∃ V : Set, ∀ x : Set, x ∈ V := by
