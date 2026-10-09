@@ -1028,3 +1028,23 @@ theorem Nat_set_subset_inductive (X : Set) (hX : is_inductive X) : ℕ_set ⊆ X
   intro n hn
   have hn_mem := (mem_Nat_set n).mp hn
   exact hn_mem.2 X hX
+
+------------------------------------------------------------------
+-- 정리 10: 수학적 귀납법 원리 (Principle of Mathematical Induction, 페아노 5번 공리)
+------------------------------------------------------------------
+theorem nat_induction (P : Set → Prop)
+    (h0 : P ∅)
+    (hstep : ∀ n, n ∈ ℕ_set → P n → P (succ n)) :
+    ∀ n, n ∈ ℕ_set → P n := by
+  let S := sep P ℕ_set
+  have hS_ind : is_inductive S := by
+    constructor
+    · apply (mem_sep P ℕ_set ∅).mpr
+      exact ⟨empty_mem_Nat_set, h0⟩
+    · intro a ha
+      have ha_mem := (mem_sep P ℕ_set a).mp ha
+      apply (mem_sep P ℕ_set (succ a)).mpr
+      exact ⟨succ_mem_Nat_set a ha_mem.1, hstep a ha_mem.1 ha_mem.2⟩
+  have h_sub : ℕ_set ⊆ S := Nat_set_subset_inductive S hS_ind
+  intro n hn
+  exact ((mem_sep P ℕ_set n).mp (h_sub n hn)).2
