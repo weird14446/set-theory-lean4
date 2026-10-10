@@ -9,6 +9,14 @@
 
 Lemma 1. 임의의 $x,y,z\in X$에 대하여, $x=y$이면 $x\cdot z=y\cdot z$이다.
 
+Proof.
+
+임의의 $x,y,z\in X$에 대하여, $x=y$임을 가정하자. 그리고 다음과 같은 함수를 정의하자.
+$$
+f(w)=w\cdot z
+$$
+
+
 Theorem (항등원의 교환법칙) 임의의 $x\in X$에 대하여, 다음을 만족한다.
 $$
 1\cdot x=x\cdot 1 = x
