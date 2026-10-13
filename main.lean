@@ -839,6 +839,59 @@ theorem equipotent_is_equivalence :
   ⟨equipotent_refl, equipotent_symm, equipotent_trans⟩
 
 ------------------------------------------------------------------
+-- [칸토어의 정리 (Cantor's Theorem)]
+-- 임의의 집합 X에 대하여, X에서 𝒫(X)로의 전사 함수는 존재하지 않는다.
+-- 따름정리: 임의의 집합 X와 그 멱집합 𝒫(X)는 대등하지 않다 (X ≇ 𝒫(X)).
+------------------------------------------------------------------
+theorem cantor_theorem (X : Set) (F : Set) (h_surj : is_surjective F X (𝒫 X)) : False := by
+  have h_func := h_surj.1
+  -- 대각선 논법 집합 D = { x ∈ X | ∀ y, ⟪x, y⟫ ∈ F → x ∉ y }
+  let D := sep (fun x => ∀ y, ⟪x, y⟫ ∈ F → x ∉ y) X
+  have hD_sub : D ⊆ X := fun a ha => ((mem_sep (fun x => ∀ y, ⟪x, y⟫ ∈ F → x ∉ y) X a).mp ha).1
+  have hD_in_pow : D ∈ 𝒫 X := (mem_powerset X D).mpr hD_sub
+  -- F가 전사함수이므로, F(d) = D인 d ∈ X가 존재한다.
+  rcases h_surj.2 D hD_in_pow with ⟨d, hd_X, hd_F⟩
+  -- 함수 정의에 의해 d에 대한 유일한 함숫값이 존재한다.
+  rcases h_func.2 d hd_X with ⟨y_val, ⟨_hy_val_in, _hd_y_val⟩, hy_val_uniq⟩
+  -- hd_F에 의해 ⟪d, D⟫ ∈ F이므로, 유일성에 의해 D = y_val
+  have hD_eq_y : D = y_val := hy_val_uniq D ⟨hD_in_pow, hd_F⟩
+  -- 이제 d ∈ D ↔ d ∉ D 모순을 도출한다.
+  have hd_mem_D : d ∈ D ↔ (∀ y, ⟪d, y⟫ ∈ F → d ∉ y) := by
+    have h_sep := mem_sep (fun x => ∀ y, ⟪x, y⟫ ∈ F → x ∉ y) X d
+    constructor
+    · intro h_in
+      exact (h_sep.mp h_in).2
+    · intro h_all
+      exact h_sep.mpr ⟨hd_X, h_all⟩
+  by_cases h_in : d ∈ D
+  · -- d ∈ D인 경우: d ∉ D 도출
+    have h_not := (hd_mem_D.mp h_in) D hd_F
+    exact h_not h_in
+  · -- d ∉ D인 경우: d ∈ D 도출
+    have h_all : ∀ y, ⟪d, y⟫ ∈ F → d ∉ y := by
+      intro y hy_in
+      have hy_in_prod := h_func.1 ⟪d, y⟫ hy_in
+      rcases (mem_prod X (𝒫 X) ⟪d, y⟫).mp hy_in_prod with ⟨a', b', _ha', hb', h_eq⟩
+      have h_pair := (opair_inj d y a' b').mp h_eq
+      have hy_in_pow' : y ∈ 𝒫 X := by rw [h_pair.2]; exact hb'
+      have hy_eq_y_val : y = y_val := hy_val_uniq y ⟨hy_in_pow', hy_in⟩
+      have hy_eq_D : y = D := hy_eq_y_val.trans hD_eq_y.symm
+      rw [hy_eq_D]
+      exact h_in
+    have hd_in_D : d ∈ D := hd_mem_D.mpr h_all
+    exact h_in hd_in_D
+
+theorem cantor_theorem_not_surjective (X : Set) (F : Set) :
+    ¬ is_surjective F X (𝒫 X) := by
+  intro h_surj
+  exact cantor_theorem X F h_surj
+
+theorem cantor_theorem_not_equipotent (X : Set) : ¬ (X ≅ 𝒫 X) := by
+  intro ⟨F, hF_bij⟩
+  exact cantor_theorem X F hF_bij.2
+
+
+------------------------------------------------------------------
 -- 정리: 전체집합(Universal Set)은 존재하지 않는다 (러셀의 역설).
 ------------------------------------------------------------------
 theorem no_universal_set : ¬ ∃ V : Set, ∀ x : Set, x ∈ V := by
@@ -1048,3 +1101,128 @@ theorem nat_induction (P : Set → Prop)
   have h_sub : ℕ_set ⊆ S := Nat_set_subset_inductive S hS_ind
   intro n hn
   exact ((mem_sep P ℕ_set n).mp (h_sub n hn)).2
+
+------------------------------------------------------------------
+-- 보조정리: 임의의 집합 n에 대하여 succ n ≠ n 이다.
+------------------------------------------------------------------
+theorem succ_ne_self (n : Set) : succ n ≠ n := by
+  intro h_eq
+  have h_in : n ∈ succ n := mem_succ_self n
+  rw [h_eq] at h_in
+  exact no_self_mem n h_in
+
+------------------------------------------------------------------
+-- [서수(Ordinal) 및 기수(Cardinal) 기초: 추이적 집합 (Transitive Set)]
+-- 집합 X가 추이적 집합이라는 것은 X의 모든 원소가 X의 부분집합임을 의미한다:
+-- ∀ y ∈ X, y ⊆ X (즉, ∀ z y, z ∈ y → y ∈ X → z ∈ X)
+-- 폰 노이만 서수는 "원소 소속 관계 ∈ 에 의해 정렬된 추이적 집합"으로 정의된다.
+------------------------------------------------------------------
+def is_transitive (X : Set) : Prop :=
+  ∀ y, y ∈ X → y ⊆ X
+
+-- 동치 조건: X가 추이적 집합인 것은 ⋃ X ⊆ X 인 것과 동치이다.
+theorem is_transitive_iff_union_all_subset (X : Set) :
+    is_transitive X ↔ ⋃ X ⊆ X := by
+  constructor
+  · intro h_trans z hz
+    rcases (mem_union_all X z).mp hz with ⟨b, hb_in, hz_b⟩
+    exact h_trans b hb_in z hz_b
+  · intro h_sub y hy z hz
+    apply h_sub
+    apply (mem_union_all X z).mpr
+    exact ⟨y, hy, hz⟩
+
+-- 정리: 공집합은 추이적 집합이다 (0 = ∅ 은 서수).
+theorem empty_is_transitive : is_transitive ∅ := by
+  intro y hy
+  exfalso
+  exact axiom_empty y hy
+
+-- 정리: 추이적 집합의 따름집합(successor) 또한 추이적 집합이다.
+theorem succ_is_transitive (X : Set) (hX : is_transitive X) : is_transitive (succ X) := by
+  intro y hy z hz
+  have hy_cases := (mem_succ_iff X y).mp hy
+  apply (mem_succ_iff X z).mpr
+  rcases hy_cases with hy_in | hy_eq
+  · -- y ∈ X인 경우
+    left
+    exact hX y hy_in z hz
+  · -- y = X인 경우
+    left
+    rw [hy_eq] at hz
+    exact hz
+
+-- 정리: 두 추이적 집합의 교집합 또한 추이적 집합이다.
+theorem inter_is_transitive (X Y : Set) (hX : is_transitive X) (hY : is_transitive Y) :
+    is_transitive (X ∩ Y) := by
+  intro y hy z hz
+  have hy_mem := (mem_inter X Y y).mp hy
+  have hz_X : z ∈ X := hX y hy_mem.1 z hz
+  have hz_Y : z ∈ Y := hY y hy_mem.2 z hz
+  exact (mem_inter X Y z).mpr ⟨hz_X, hz_Y⟩
+
+-- 정리: 두 추이적 집합의 합집합 또한 추이적 집합이다.
+theorem union_is_transitive (X Y : Set) (hX : is_transitive X) (hY : is_transitive Y) :
+    is_transitive (X ∪ Y) := by
+  intro y hy z hz
+  have hy_mem := (mem_union X Y y).mp hy
+  apply (mem_union X Y z).mpr
+  rcases hy_mem with hy_X | hy_Y
+  · left
+    exact hX y hy_X z hz
+  · right
+    exact hY y hy_Y z hz
+
+-- 정리: 추이적 집합의 일반 합집합 ⋃ X 또한 추이적 집합이다.
+theorem union_all_is_transitive (X : Set) (hX : is_transitive X) :
+    is_transitive (⋃ X) := by
+  intro y hy z hz
+  rcases (mem_union_all X y).mp hy with ⟨b, hb_X, hy_b⟩
+  have hy_X : y ∈ X := hX b hb_X y hy_b
+  apply (mem_union_all X z).mpr
+  exact ⟨y, hy_X, hz⟩
+
+-- 정리: 추이적 집합의 따름집합의 합집합은 원래 집합과 같다: ⋃ (succ X) = X
+theorem union_all_succ_of_is_transitive (X : Set) (hX : is_transitive X) :
+    ⋃ (succ X) = X := by
+  apply (axiom_extensionality (⋃ succ X) X).mp
+  intro z
+  constructor
+  · intro hz
+    rcases (mem_union_all (succ X) z).mp hz with ⟨b, hb_in, hz_b⟩
+    rcases (mem_succ_iff X b).mp hb_in with hb_X | hb_eq
+    · exact hX b hb_X z hz_b
+    · rw [hb_eq] at hz_b
+      exact hz_b
+  · intro hz
+    apply (mem_union_all (succ X) z).mpr
+    exact ⟨X, (mem_succ_iff X X).mpr (Or.inr rfl), hz⟩
+
+-- 정리: 모든 자연수 n ∈ ℕ_set은 추이적 집합이다 (수학적 귀납법).
+theorem nat_is_transitive (n : Set) (hn : n ∈ ℕ_set) : is_transitive n := by
+  apply nat_induction (fun k => is_transitive k) empty_is_transitive
+  · intro k _hk h_trans
+    exact succ_is_transitive k h_trans
+  · exact hn
+
+-- 정리: 자연수 집합의 원소의 원소는 다시 자연수 집합의 원소이다.
+theorem nat_elements_in_Nat_set (n : Set) (hn : n ∈ ℕ_set) :
+    ∀ m, m ∈ n → m ∈ ℕ_set := by
+  apply nat_induction (fun k => ∀ m, m ∈ k → m ∈ ℕ_set)
+  · intro m hm
+    exfalso
+    exact axiom_empty m hm
+  · intro k hk h_ind m hm
+    have hm_cases := (mem_succ_iff k m).mp hm
+    rcases hm_cases with hm_in | hm_eq
+    · exact h_ind m hm_in
+    · rw [hm_eq]
+      exact hk
+  · exact hn
+
+-- 정리: 자연수 집합 ℕ_set(즉 첫 번째 극한 서수이자 무한 서수 ω) 자체도 추이적 집합이다.
+theorem Nat_set_is_transitive : is_transitive ℕ_set := by
+  intro n hn
+  intro m hm
+  exact nat_elements_in_Nat_set n hn m hm
+

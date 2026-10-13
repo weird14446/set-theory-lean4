@@ -59,6 +59,9 @@ Lean 4로 형식화한 **체르멜로-프렝켈 집합론 및 선택 공리(ZFC,
     - 대칭율: `X ≅ Y → Y ≅ X` (`equipotent_symm`, 역함수 `inv_func`)
     - 추이율: `X ≅ Y → Y ≅ Z → X ≅ Z` (`equipotent_trans`, 합성 함수 `comp_func`)
     - 동치 관계 종합: `equipotent_is_equivalence`
+- **칸토어의 정리 (Cantor's Theorem: 기수의 확장)**:
+  - **전사 함수 부존재 정리**: 임의의 집합 $X$에서 멱집합 $\mathcal{P}(X)$로의 전사 함수는 존재하지 않는다 (`cantor_theorem`, `cantor_theorem_not_surjective`).
+  - **대등 부존재 정리 (엄격한 기수 증가)**: 임의의 집합 $X$와 멱집합 $\mathcal{P}(X)$는 대등(동형)하지 않다 (`cantor_theorem_not_equipotent`, $X \not\cong \mathcal{P}(X)$).
 - **불가능성 정리 (러셀의 역설)**:
   - **전체집합(Universal Set)의 부존재 정리**: `¬ ∃ V, ∀ x, x ∈ V`
   - **절대적 여집합의 부존재 정리**: `¬ ∃ C, ∀ x, x ∈ C ↔ x ∉ A` (정칙성 공리 및 러셀의 역설 2가지 방식으로 증명)
@@ -73,9 +76,25 @@ Lean 4로 형식화한 **체르멜로-프렝켈 집합론 및 선택 공리(ZFC,
   - `∀ n ∈ ℕ_set, succ n ∈ ℕ_set`
   - 자연수 집합 스스로 귀납적 집합임 (`Nat_set_is_inductive`)
   - 다음수의 비공집합성: `succ n ≠ ∅`
+  - 다음수의 자기 비일치성: `succ n ≠ n` (`succ_ne_self`)
   - 다음수 함수의 단사성: `succ m = succ n → m = n`
   - 최소 귀납적 집합 성질: `ℕ_set ⊆ X` (임의의 귀납적 집합 `X`에 대해)
   - 수학적 귀납법 원리 (페아노 5번 공리): `nat_induction` (임의의 술어 `P`에 대해 `P ∅`와 `P n → P (succ n)`로부터 `∀ n ∈ ℕ_set, P n` 유도)
+
+### 6. 서수(Ordinal)와 기수(Cardinal)의 기초: 추이적 집합 (Transitive Sets)
+- **추이적 집합 정의**: `is_transitive X := ∀ y ∈ X, y ⊆ X`
+- **합집합 동치 조건**: `is_transitive X ↔ ⋃ X ⊆ X` (`is_transitive_iff_union_all_subset`)
+- **공집합의 추이성**: `is_transitive ∅` (`empty_is_transitive`, $0 = \emptyset$은 최초의 서수)
+- **따름연산의 추이성 보존**: `is_transitive X → is_transitive (succ X)` (`succ_is_transitive`)
+- **따름집합 합집합 정리**: `is_transitive X → ⋃ (succ X) = X` (`union_all_succ_of_is_transitive`)
+- **연산에 대한 닫힘 성질**:
+  - 교집합의 추이성: `is_transitive (X ∩ Y)` (`inter_is_transitive`)
+  - 합집합의 추이성: `is_transitive (X ∪ Y)` (`union_is_transitive`)
+  - 일반 합집합의 추이성: `is_transitive (⋃ X)` (`union_all_is_transitive`)
+- **자연수 집합의 추이성 및 폰 노이만 서수 구조**:
+  - 모든 자연수의 추이성: `∀ n ∈ ℕ_set, is_transitive n` (`nat_is_transitive`)
+  - 자연수 원소의 소속성: `∀ n ∈ ℕ_set, ∀ m ∈ n, m ∈ ℕ_set` (`nat_elements_in_Nat_set`)
+  - 자연수 전체 집합의 추이성: `is_transitive ℕ_set` (`Nat_set_is_transitive`, $\omega$는 최초의 극한 서수)
 
 ---
 
